@@ -156,7 +156,7 @@ def clean_text(text):
     text = re.sub(r'\s+', ' ', text).strip()  # Normalize spaces
     return text
 
-Section 4: Prediction Functions
+# Section 4: Prediction Functions
 def predict_with_ml_model(text, model, vectorizer):
     """Predict sentiment using the Naive Bayes model."""
     cleaned_text = clean_text(text)
