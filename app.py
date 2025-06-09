@@ -28,59 +28,59 @@ st.set_page_config(
 if 'prediction_history' not in st.session_state:
     st.session_state.prediction_history = []
 
-# Section 2: Resource Loading
-# def load_models_and_tokenizers():
-#     try:
-#         base_dir = Path(__file__).parent  # directory where this script is located
-        
-#         with open(base_dir / 'saved_models' / 'naive_bayes_model.pkl', 'rb') as f:
-#             ml_model = pickle.load(f)
-#         with open(base_dir / 'saved_models' / 'tfidf_vectorizer.pkl', 'rb') as f:
-#             tfidf_vectorizer = pickle.load(f)
-#         dl_model = load_model(base_dir / 'saved_models' / 'gru_model.h5')
-#         with open(base_dir / 'saved_models' / 'tokenizer.pkl', 'rb') as f:
-#             tokenizer = pickle.load(f)
-#         with open(base_dir / 'saved_models' / 'label_encoder.pkl', 'rb') as f:
-#             label_encoder = pickle.load(f)
-        
-#         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
-#     except Exception as e:
-#         st.error(f"Error loading resources: {e}")
-#         return None, None, None, None, None
-
-
+Section 2: Resource Loading
 def load_models_and_tokenizers():
     try:
-        base_dir = Path(__file__).parent
+        base_dir = Path(__file__).parent  # directory where this script is located
         
-        nb_path = base_dir / 'saved_models' / 'naive_bayes_model.pkl'
-        tfidf_path = base_dir / 'tfidf_vectorizer.pkl'
-        gru_path = base_dir / 'saved_models' / 'gru_model.h5'
-        tokenizer_path = base_dir / 'saved_models' / 'tokenizer.pkl'
-        label_enc_path = base_dir / 'saved_models' / 'label_encoder.pkl'
-        
-        st.write(f"Loading models from: {nb_path.parent}")
-        
-        with open(nb_path, 'rb') as f:
+        with open(base_dir / 'saved_models' / 'naive_bayes_model.pkl', 'rb') as f:
             ml_model = pickle.load(f)
-        with open(tfidf_path, 'rb') as f:
+        with open(base_dir / 'saved_models' / 'tfidf_vectorizer.pkl', 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
-        
-        # Check if TF-IDF vectorizer is fitted
-        check_is_fitted(tfidf_vectorizer)
-        
-        dl_model = load_model(gru_path)
-        with open(tokenizer_path, 'rb') as f:
+        dl_model = load_model(base_dir / 'saved_models' / 'gru_model.h5')
+        with open(base_dir / 'saved_models' / 'tokenizer.pkl', 'rb') as f:
             tokenizer = pickle.load(f)
-        with open(label_enc_path, 'rb') as f:
+        with open(base_dir / 'saved_models' / 'label_encoder.pkl', 'rb') as f:
             label_encoder = pickle.load(f)
         
-        st.write("All models loaded and TF-IDF vectorizer is fitted.")
         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
-    
     except Exception as e:
         st.error(f"Error loading resources: {e}")
         return None, None, None, None, None
+
+
+# def load_models_and_tokenizers():
+#     try:
+#         base_dir = Path(__file__).parent
+        
+#         nb_path = base_dir / 'saved_models' / 'naive_bayes_model.pkl'
+#         tfidf_path = base_dir / 'tfidf_vectorizer.pkl'
+#         gru_path = base_dir / 'saved_models' / 'gru_model.h5'
+#         tokenizer_path = base_dir / 'saved_models' / 'tokenizer.pkl'
+#         label_enc_path = base_dir / 'saved_models' / 'label_encoder.pkl'
+        
+#         st.write(f"Loading models from: {nb_path.parent}")
+        
+#         with open(nb_path, 'rb') as f:
+#             ml_model = pickle.load(f)
+#         with open(tfidf_path, 'rb') as f:
+#             tfidf_vectorizer = pickle.load(f)
+        
+#         # Check if TF-IDF vectorizer is fitted
+#         check_is_fitted(tfidf_vectorizer)
+        
+#         dl_model = load_model(gru_path)
+#         with open(tokenizer_path, 'rb') as f:
+#             tokenizer = pickle.load(f)
+#         with open(label_enc_path, 'rb') as f:
+#             label_encoder = pickle.load(f)
+        
+#         st.write("All models loaded and TF-IDF vectorizer is fitted.")
+#         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
+    
+#     except Exception as e:
+#         st.error(f"Error loading resources: {e}")
+#         return None, None, None, None, None
 
 
 # Section 3: Text Preprocessing
