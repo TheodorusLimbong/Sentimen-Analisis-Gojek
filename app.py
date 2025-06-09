@@ -97,16 +97,42 @@ def clean_text(text):
     return text
 
 # Section 4: Prediction Functions
-def predict_with_ml_model(text, model, vectorizer):
-    """Predict sentiment using the Naive Bayes model."""
-    cleaned_text = clean_text(text)
-    vectorized_text = vectorizer.transform([cleaned_text])
-    sentiment_result = model.predict(vectorized_text)[0]
+# def predict_with_ml_model(text, model, vectorizer):
+#     """Predict sentiment using the Naive Bayes model."""
+#     cleaned_text = clean_text(text)
+#     vectorized_text = vectorizer.transform([cleaned_text])
+#     sentiment_result = model.predict(vectorized_text)[0]
     
-    # Get probabilities for Naive Bayes
+#     # Get probabilities for Naive Bayes
+#     probabilities = model.predict_proba(vectorized_text)[0]
+    
+#     return sentiment_result, probabilities
+
+def predict_with_ml_model(text, model, vectorizer):
+    """
+    Predict sentiment using the Naive Bayes model and a fitted TF-IDF vectorizer.
+    
+    Args:
+        text (str): Input text to classify.
+        model: Trained ML model with predict and predict_proba methods.
+        vectorizer: Fitted TfidfVectorizer instance.
+        
+    Returns:
+        tuple: (predicted_label, probability_array)
+    """
+    cleaned_text = clean_text(text)
+    
+    # Pastikan vectorizer sudah fit, kalau belum, bisa raise error atau fit ulang (opsional)
+    try:
+        vectorized_text = vectorizer.transform([cleaned_text])
+    except Exception as e:
+        raise ValueError("Vectorizer belum fit atau error saat transform: " + str(e))
+    
+    sentiment_result = model.predict(vectorized_text)[0]
     probabilities = model.predict_proba(vectorized_text)[0]
     
     return sentiment_result, probabilities
+
 
 def predict_with_dl_model(text, model, tokenizer, label_encoder, max_length=100):
     """Predict sentiment using the GRU model."""
