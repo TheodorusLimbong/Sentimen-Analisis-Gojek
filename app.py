@@ -29,47 +29,33 @@ if 'prediction_history' not in st.session_state:
 
 # Section 2: Resource Loading
 # Resolve the base directory dynamically
-BASE_DIR = Path(__file__).resolve().parent
-SAVED_MODELS_DIR = BASE_DIR / "saved_models"
-
-# List of resources to load
-resources = {
-    "naive_bayes_model": SAVED_MODELS_DIR / "naive_bayes_model.pkl",
-    "tfidf_vectorizer": SAVED_MODELS_DIR / "tfidf_vectorizer.pkl",
-    "gru_model": SAVED_MODELS_DIR / "gru_model.h5",
-    "tokenizer": SAVED_MODELS_DIR / "tokenizer.pkl",
-    "label_encoder": SAVED_MODELS_DIR / "label_encoder.pkl",
-    "nb_metrics": SAVED_MODELS_DIR / "nb_metrics.pkl",
-    "gru_metrics": SAVED_MODELS_DIR / "gru_metrics.pkl",
-    "fasttext_model": SAVED_MODELS_DIR / "fasttext_model.model",
-    "gru_fasttext_model": SAVED_MODELS_DIR / "gru_fasttext_model.h5",
-    "gru_fasttext_metrics": SAVED_MODELS_DIR / "gru_fasttext_metrics.pkl",
-}
-
-# Dictionary to store loaded resources
-loaded_resources = {}
-
-# Load resources dynamically
-for name, path in resources.items():
-    if not path.exists():
-        print(f"❌ Resource not found: {path}")
-    else:
-        try:
-            if path.suffix in [".pkl", ".model"]:  # Load using pickle for .pkl and .model files
-                with open(path, 'rb') as file:
-                    loaded_resources[name] = pickle.load(file)
-            elif path.suffix == ".h5":  # Load TensorFlow models
-                import tensorflow as tf
-                loaded_resources[name] = tf.keras.models.load_model(path)
-            else:
-                print(f"⚠️ Unsupported file type for: {path}")
-        except Exception as e:
-            print(f"⚠️ Error loading {name} from {path}: {e}")
-        else:
-            print(f"✅ Successfully loaded: {name}")
-
-# Access loaded resources
-print("Loaded resources:", loaded_resources.keys())
+def load_models_and_tokenizers():
+    """Load machine learning and deep learning models along with their vectorizers/tokenizers."""
+    try:
+        # Load ML model (Naive Bayes)
+        with open(r'saved_models\naive_bayes_model.pkl', 'rb') as f:
+            ml_model = pickle.load(f)
+        
+        # Load TF-IDF vectorizer
+        with open(r'saved_models\tfidf_vectorizer.pkl', 'rb') as f:
+            tfidf_vectorizer = pickle.load(f)
+        
+        # Load deep learning model (GRU) using h5
+        dl_model = load_model(r'saved_models\gru_model.h5')
+        
+        # Load tokenizer
+        with open(r'saved_models\tokenizer.pkl', 'rb') as f:
+            tokenizer = pickle.load(f)
+        
+        # Load label encoder
+        with open(r'saved_models\label_encoder.pkl', 'rb') as f:
+            label_encoder = pickle.load(f)
+        
+        print("All resources loaded successfully")
+        return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
+    except Exception as e:
+        st.error(f"Error loading resources: {e}")
+        return None, None, None, None, None
 
 # Section 3: Text Preprocessing
 def clean_text(text):
