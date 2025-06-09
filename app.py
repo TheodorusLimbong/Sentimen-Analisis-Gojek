@@ -28,7 +28,7 @@ st.set_page_config(
 if 'prediction_history' not in st.session_state:
     st.session_state.prediction_history = []
 
-Section 2: Resource Loading
+# Section 2: Resource Loading
 def load_models_and_tokenizers():
     try:
         base_dir = Path(__file__).parent  # directory where this script is located
