@@ -156,11 +156,13 @@ def predict_with_ml_model(text, model, vectorizer):
         tuple: (predicted_label, probability_array)
     """
     cleaned_text = clean_text(text)
+    st.write(f"Cleaned text: {cleaned_text}")  # Debugging
+    st.write(f"Vectorizer fitted: {hasattr(vectorizer, 'vocabulary_') and vectorizer.vocabulary_ is not None}")  # Debugging
     
-    # Pastikan vectorizer sudah fit, kalau belum, bisa raise error atau fit ulang (opsional)
     try:
         vectorized_text = vectorizer.transform([cleaned_text])
     except Exception as e:
+        st.error(f"Vectorizer error: {str(e)}")
         raise ValueError("Vectorizer belum fit atau error saat transform: " + str(e))
     
     sentiment_result = model.predict(vectorized_text)[0]
