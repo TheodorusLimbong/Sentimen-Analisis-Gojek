@@ -31,53 +31,22 @@ if 'prediction_history' not in st.session_state:
 from pathlib import Path
 
 @st.cache_resource
-def load_models_and_tokenizers():
-    """Load machine learning and deep learning models along with their vectorizers/tokenizers."""
+BASE_DIR = Path(__file__).resolve().parent
+
+# Construct the path to the model file
+model_path = BASE_DIR / "saved_models" / "naive_bayes_model.pkl"
+
+# Check if the file exists
+if not model_path.exists():
+    print(f"File not found: {model_path}")
+else:
     try:
-        # Define the base folder for models
-        base_path = Path("saved_model")
-
-        # Paths to model files
-        nb_model_path = base_path / "naive_bayes_model.pkl"
-        tfidf_vectorizer_path = base_path / "tfidf_vectorizer.pkl"
-        gru_model_path = base_path / "gru_model.h5"
-        tokenizer_path = base_path / "tokenizer.pkl"
-        label_encoder_path = base_path / "label_encoder.pkl"
-
-        # Check if all required files exist
-        required_files = [
-            nb_model_path,
-            tfidf_vectorizer_path,
-            gru_model_path,
-            tokenizer_path,
-            label_encoder_path,
-        ]
-        for file_path in required_files:
-            if not file_path.exists():
-                st.error(f"❌ Missing required file: {file_path.resolve()}")
-                st.stop()
-
-        # Load models and resources
-        with nb_model_path.open("rb") as f:
-            ml_model = pickle.load(f)
-
-        with tfidf_vectorizer_path.open("rb") as f:
-            tfidf_vectorizer = pickle.load(f)
-
-        dl_model = load_model(gru_model_path)
-
-        with tokenizer_path.open("rb") as f:
-            tokenizer = pickle.load(f)
-
-        with label_encoder_path.open("rb") as f:
-            label_encoder = pickle.load(f)
-
-        print("All resources loaded successfully")
-        return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
+        # Load the model
+        with open(model_path, 'rb') as file:
+            naive_bayes_model = pickle.load(file)
+        print("Model successfully loaded.")
     except Exception as e:
-        st.error(f"Error loading resources: {e}")
-        return None, None, None, None, None
-
+        print(f"Error loading the model: {e}")
 
 # Section 3: Text Preprocessing
 def clean_text(text):
