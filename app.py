@@ -76,19 +76,13 @@ def load_models_and_tokenizers():
             logger.info("TF-IDF vectorizer is fitted.")
             st.write("TF-IDF vectorizer loaded and fitted.")
         except Exception as e:
-            st.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
+            st.error(
+                f"TF-IDF vectorizer is not fitted: {str(e)}\n"
+                "Please re-fit the vectorizer with your training data and re-save it. "
+                "See instructions in the logs or documentation."
+            )
             logger.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
-            # Attempt to initialize a new fitted vectorizer as fallback
-            try:
-                tfidf_vectorizer = TfidfVectorizer(max_features=5000)
-                # Note: Ideally, you should fit the vectorizer with training data here.
-                # For this fix, we assume the model expects a fitted vectorizer.
-                st.warning("Initialized a new TF-IDF vectorizer. Please ensure it is fitted with training data.")
-                logger.warning("Initialized a new TF-IDF vectorizer as fallback.")
-            except Exception as e:
-                st.error(f"Failed to initialize TF-IDF vectorizer: {str(e)}")
-                logger.error(f"Failed to initialize TF-IDF vectorizer: {str(e)}")
-                return None, None, None, None, None
+            return None, None, None, None, None
         
         # Load GRU model
         try:
@@ -115,6 +109,25 @@ def load_models_and_tokenizers():
         st.error(f"Unexpected error loading resources: {str(e)}")
         logger.error(f"Unexpected error loading resources: {str(e)}")
         return None, None, None, None, None
+
+# Placeholder function to fit TF-IDF vectorizer (to be used separately)
+def fit_and_save_tfidf_vectorizer(training_data, save_path='saved_models/tfidf_vectorizer.pkl'):
+    """
+    Fit a TF-IDF vectorizer with training data and save it.
+    Args:
+        training_data: List or array of text documents to fit the vectorizer.
+        save_path: Path to save the fitted vectorizer.
+    """
+    try:
+        vectorizer = TfidfVectorizer(max_features=5000)
+        vectorizer.fit(training_data)
+        with open(save_path, 'wb') as f:
+            pickle.dump(vectorizer, f)
+        logger.info(f"TF-IDF vectorizer fitted and saved to {save_path}.")
+        return vectorizer
+    except Exception as e:
+        logger.error(f"Failed to fit and save TF-IDF vectorizer: {str(e)}")
+        raise
 
 # Section 3: Text Preprocessing
 def clean_text(text):
@@ -206,7 +219,10 @@ def run_app():
     ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder = load_models_and_tokenizers()
     
     if not all([ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder]):
-        st.error("Failed to load resources. Please check model files.")
+        st.error(
+            "Failed to load resources. Please check model files.\n"
+            "If the TF-IDF vectorizer is not fitted, re-fit it with your training data using the provided instructions."
+        )
         logger.error("Failed to load all required resources.")
         return
     
