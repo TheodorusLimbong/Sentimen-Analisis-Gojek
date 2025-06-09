@@ -79,7 +79,7 @@ def load_models_and_tokenizers():
             st.error(
                 f"TF-IDF vectorizer is not fitted: {str(e)}\n"
                 "Please re-fit the vectorizer with your training data and re-save it. "
-                "See instructions in the logs or documentation."
+                "See instructions in the logs or run the provided fitting script."
             )
             logger.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
             return None, None, None, None, None
@@ -121,6 +121,8 @@ def fit_and_save_tfidf_vectorizer(training_data, save_path='saved_models/tfidf_v
     try:
         vectorizer = TfidfVectorizer(max_features=5000)
         vectorizer.fit(training_data)
+        save_path = Path(save_path)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
         with open(save_path, 'wb') as f:
             pickle.dump(vectorizer, f)
         logger.info(f"TF-IDF vectorizer fitted and saved to {save_path}.")
@@ -278,7 +280,7 @@ def run_app():
         if model_choice == "Machine Learning (Naive Bayes)":
             st.write("**Model:** Naive Bayes (MultinomialNB)")
             st.write("**Features:** TF-IDF (Term Frequency-Inverse Document Frequency)")
-            st.write("**Description:** Uses a Multinomial Naive Bayes classifier with TF-IDF features to classify review sentiment.")
+            st.write("**Description:** Uses a Multinomial Naive Bayes classifier with TF-IDIF features to classify review sentiment.")
         else:
             st.write("**Model:** Gated Recurrent Unit (GRU)")
             st.write("**Features:** FastText Word Embeddings")
