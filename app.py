@@ -27,52 +27,41 @@ if 'prediction_history' not in st.session_state:
     st.session_state.prediction_history = []
 
 # Section 2: Resource Loading
-import os
-
-import pickle
-import os
-
-# Path to the vectorizer file (adjust as needed)
-vectorizer_path = os.path.join('saved_models', 'tfidf_vectorizer.pkl')
-
-# Load the vectorizer
-with open(vectorizer_path, 'rb') as f:
-    tfidf_vectorizer = pickle.load(f)
-
-# Check if the vectorizer is fitted
-print("Vocabulary size:", len(tfidf_vectorizer.vocabulary_))
-print("IDF vector:", tfidf_vectorizer.idf_)
-# Section 2: Resource Loading
 @st.cache_resource
 def load_models_and_tokenizers():
-    """Load machine learning and deep learning models along with their vectorizers/tokenizers."""
+    """Memuat model machine learning dan deep learning serta vectorizer/tokenizer."""
     try:
-        # Define the path to the saved_models folder relative to app.py
         base_path = os.path.join(os.path.dirname(__file__), 'saved_models')
 
-        # Load ML model (Naive Bayes)
+        # Muat model Naive Bayes
         with open(os.path.join(base_path, 'naive_bayes_model.pkl'), 'rb') as f:
             ml_model = pickle.load(f)
         
-        # Load TF-IDF vectorizer
+        # Muat TF-IDF vectorizer
         with open(os.path.join(base_path, 'tfidf_vectorizer.pkl'), 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
         
-        # Load deep learning model (GRU) using h5
+        # Periksa apakah vectorizer adalah TfidfVectorizer dan sudah dilatih
+        if not isinstance(tfidf_vectorizer, TfidfVectorizer):
+            raise ValueError(f"Diharapkan TfidfVectorizer, mendapat {type(tfidf_vectorizer).__name__}")
+        if not hasattr(tfidf_vectorizer, 'idf_') or tfidf_vectorizer.idf_ is None:
+            raise ValueError("TfidfVectorizer belum dilatih. Harap sediakan vectorizer yang sudah dilatih.")
+
+        # Muat model GRU
         dl_model = load_model(os.path.join(base_path, 'gru_model.h5'))
         
-        # Load tokenizer
+        # Muat tokenizer
         with open(os.path.join(base_path, 'tokenizer.pkl'), 'rb') as f:
             tokenizer = pickle.load(f)
         
-        # Load label encoder
+        # Muat label encoder
         with open(os.path.join(base_path, 'label_encoder.pkl'), 'rb') as f:
             label_encoder = pickle.load(f)
         
-        print("All resources loaded successfully")
+        print("Semua sumber daya dimuat berhasil")
         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
     except Exception as e:
-        st.error(f"Error loading resources: {e}")
+        st.error(f"Error memuat sumber daya: {e}")
         return None, None, None, None, None
 # Section 3: Text Preprocessing
 def clean_text(text):
@@ -88,15 +77,19 @@ def clean_text(text):
 
 # Section 4: Prediction Functions
 def predict_with_ml_model(text, model, vectorizer):
-    """Predict sentiment using the Naive Bayes model."""
+    """Prediksi sentimen menggunakan model Naive Bayes."""
     cleaned_text = clean_text(text)
-    vectorized_text = vectorizer.transform([cleaned_text])
-    sentiment_result = model.predict(vectorized_text)[0]
-    
-    # Get probabilities for Naive Bayes
-    probabilities = model.predict_proba(vectorized_text)[0]
-    
-    return sentiment_result, probabilities
+    if not cleaned_text:
+        st.error("Teks kosong setelah pembersihan.")
+        return None, None
+    try:
+        vectorized_text = vectorizer.transform([cleaned_text])
+        sentiment_result = model.predict(vectorized_text)[0]
+        probabilities = model.predict_proba(vectorized_text)[0]
+        return sentiment_result, probabilities
+    except Exception as e:
+        st.error(f"Error dalam prediksi ML: {e}")
+        return None, None
 
 def predict_with_dl_model(text, model, tokenizer, label_encoder, max_length=100):
     """Predict sentiment using the GRU model."""
