@@ -28,13 +28,16 @@ if 'prediction_history' not in st.session_state:
     st.session_state.prediction_history = []
 
 # Section 2: Resource Loading
-import os
-
 @st.cache_resource
 def load_models_and_tokenizers():
     """Load machine learning and deep learning models along with their vectorizers/tokenizers."""
     try:
         model_dir = "saved_models"
+        # Debug: List files in directory
+        st.write(f"Current working directory: {os.getcwd()}")
+        st.write(f"Model directory: {os.path.abspath(model_dir)}")
+        st.write(f"Files in model directory: {os.listdir(model_dir)}")
+
         # Load ML model (Naive Bayes)
         with open(os.path.join(model_dir, "naive_bayes_model.pkl"), 'rb') as f:
             ml_model = pickle.load(f)
@@ -42,6 +45,11 @@ def load_models_and_tokenizers():
         # Load TF-IDF vectorizer
         with open(os.path.join(model_dir, "tfidf_vectorizer.pkl"), 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
+        
+        # Debug: Check if vectorizer is fitted
+        if not hasattr(tfidf_vectorizer, 'idf_'):
+            st.error("TF-IDF vectorizer is not fitted!")
+            return None, None, None, None, None
         
         # Load deep learning model (GRU) using h5
         dl_model = load_model(os.path.join(model_dir, "gru_model.h5"))
@@ -54,7 +62,7 @@ def load_models_and_tokenizers():
         with open(os.path.join(model_dir, "label_encoder.pkl"), 'rb') as f:
             label_encoder = pickle.load(f)
         
-        print("All resources loaded successfully")
+        st.write("All resources loaded successfully")
         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
     except Exception as e:
         st.error(f"Error loading resources: {e}")
