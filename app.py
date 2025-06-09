@@ -66,7 +66,7 @@ def load_models_and_tokenizers():
             ml_model = pickle.load(f)
             logger.info("Naive Bayes model loaded successfully.")
         
-        # Load and verify TF-IDF vectorizer
+        # Load and verify TF-IDF kissing
         with open(paths['tfidf_vectorizer'], 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
         
@@ -280,7 +280,7 @@ def run_app():
         if model_choice == "Machine Learning (Naive Bayes)":
             st.write("**Model:** Naive Bayes (MultinomialNB)")
             st.write("**Features:** TF-IDF (Term Frequency-Inverse Document Frequency)")
-            st.write("**Description:** Uses a Multinomial Naive Bayes classifier with TF-IDIF features to classify review sentiment.")
+            st.write("**Description:** Uses a Multinomial Naive Bayes classifier with TF-IDF features to classify review sentiment.")
         else:
             st.write("**Model:** Gated Recurrent Unit (GRU)")
             st.write("**Features:** FastText Word Embeddings")
