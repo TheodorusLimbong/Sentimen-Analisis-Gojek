@@ -39,13 +39,11 @@ def load_models_and_tokenizers():
         base_dir = Path(__file__).parent
         saved_models_dir = base_dir / 'saved_models'
         
-        # Check if directory exists
         if not saved_models_dir.exists():
             st.error(f"Model directory {saved_models_dir} does not exist.")
             logger.error(f"Model directory {saved_models_dir} not found.")
             return None, None, None, None, None
-        
-        # Define model paths
+
         paths = {
             'naive_bayes': saved_models_dir / 'naive_bayes_model.pkl',
             'tfidf_vectorizer': saved_models_dir / 'tfidf_vectorizer.pkl',
@@ -53,58 +51,45 @@ def load_models_and_tokenizers():
             'tokenizer': saved_models_dir / 'tokenizer.pkl',
             'label_encoder': saved_models_dir / 'label_encoder.pkl'
         }
-        
-        # Check if all files exist
+
         for name, path in paths.items():
             if not path.exists():
                 st.error(f"File {name} not found at {path}.")
                 logger.error(f"File {name} not found at {path}.")
                 return None, None, None, None, None
-        
-        # Load Naive Bayes model
+
+        # Load Naive Bayes
         with open(paths['naive_bayes'], 'rb') as f:
             ml_model = pickle.load(f)
-            logger.info("Naive Bayes model loaded successfully.")
-        
-        # Load and verify TF-IDF kissing
+        # Load TF-IDF Vectorizer
         with open(paths['tfidf_vectorizer'], 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
-        
-        # Verify TF-IDF vectorizer is fitted
+        # Verifikasi apakah sudah di-fit
         try:
             check_is_fitted(tfidf_vectorizer, attributes=['vocabulary_', 'idf_'])
             logger.info("TF-IDF vectorizer is fitted.")
-            st.write("TF-IDF vectorizer loaded and fitted.")
         except Exception as e:
             st.error(
                 f"TF-IDF vectorizer is not fitted: {str(e)}\n"
-                "Please re-fit the vectorizer with your training data and re-save it. "
+                "Please re-fit the vectorizer with your training data and re-save it.\n"
                 "See instructions in the logs or run the provided fitting script."
             )
             logger.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
             return None, None, None, None, None
-        
-        # Load GRU model
-        try:
-            dl_model = load_model(paths['gru_model'])
-            logger.info("GRU model loaded successfully.")
-        except Exception as e:
-            st.error(f"Failed to load GRU model: {str(e)}")
-            logger.error(f"Failed to load GRU model: {str(e)}")
-            return None, None, None, None, None
-        
-        # Load tokenizer
+
+        # Load GRU Model
+        dl_model = load_model(paths['gru_model'])
+
+        # Load Tokenizer
         with open(paths['tokenizer'], 'rb') as f:
             tokenizer = pickle.load(f)
-            logger.info("Tokenizer loaded successfully.")
-        
-        # Load label encoder
+
+        # Load Label Encoder
         with open(paths['label_encoder'], 'rb') as f:
             label_encoder = pickle.load(f)
-            logger.info("Label encoder loaded successfully.")
-        
+
         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
-    
+
     except Exception as e:
         st.error(f"Unexpected error loading resources: {str(e)}")
         logger.error(f"Unexpected error loading resources: {str(e)}")
