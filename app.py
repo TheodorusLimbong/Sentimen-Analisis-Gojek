@@ -31,23 +31,25 @@ if 'prediction_history' not in st.session_state:
 def load_models_and_tokenizers():
     """Load machine learning and deep learning models along with their vectorizers/tokenizers."""
     try:
+        # Define the directory for saved models
+        model_dir = "saved_models"
         # Load ML model (Naive Bayes)
-        with open('saved_models\naive_bayes_model.pkl', 'rb') as f:
+        with open(os.path.join(model_dir, "naive_bayes_model.pkl"), 'rb') as f:
             ml_model = pickle.load(f)
         
         # Load TF-IDF vectorizer
-        with open('saved_models\tfidf_vectorizer.pkl', 'rb') as f:
+        with open(os.path.join(model_dir, "tfidf_vectorizer.pkl"), 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
         
         # Load deep learning model (GRU) using h5
-        dl_model = load_model('saved_models\gru_model.h5')
+        dl_model = load_model(os.path.join(model_dir, "gru_model.h5"))
         
         # Load tokenizer
-        with open('saved_models\tokenizer.pkl', 'rb') as f:
+        with open(os.path.join(model_dir, "tokenizer.pkl"), 'rb') as f:
             tokenizer = pickle.load(f)
         
         # Load label encoder
-        with open('saved_models\label_encoder.pkl', 'rb') as f:
+        with open(os.path.join(model_dir, "label_encoder.pkl"), 'rb') as f:
             label_encoder = pickle.load(f)
         
         print("All resources loaded successfully")
