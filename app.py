@@ -5,11 +5,12 @@ import pickle
 import re
 import string
 import nltk
-import os
 from nltk.corpus import stopwords
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.feature_extraction.text import TfidfVectorizer
+from pathlib import Path
+from sklearn.utils.validation import check_is_fitted
 
 # Section 1: Imports and Setup
 nltk.download('stopwords', quiet=True)
@@ -28,42 +29,60 @@ if 'prediction_history' not in st.session_state:
     st.session_state.prediction_history = []
 
 # Section 2: Resource Loading
-@st.cache_resource
-def load_models_and_tokenizers():
-    """Memuat model machine learning dan deep learning serta vectorizer/tokenizer."""
-    try:
-        base_path = os.path.join(os.path.dirname(__file__), 'saved_models')
-
-        # Muat model Naive Bayes
-        with open(os.path.join(base_path, 'naive_bayes_model.pkl'), 'rb') as f:
-            ml_model = pickle.load(f)
+# def load_models_and_tokenizers():
+#     try:
+#         base_dir = Path(__file__).parent  # directory where this script is located
         
-        # Muat TF-IDF vectorizer
-        with open(os.path.join(base_path, 'tfidf_vectorizer.pkl'), 'rb') as f:
+#         with open(base_dir / 'saved_models' / 'naive_bayes_model.pkl', 'rb') as f:
+#             ml_model = pickle.load(f)
+#         with open(base_dir / 'saved_models' / 'tfidf_vectorizer.pkl', 'rb') as f:
+#             tfidf_vectorizer = pickle.load(f)
+#         dl_model = load_model(base_dir / 'saved_models' / 'gru_model.h5')
+#         with open(base_dir / 'saved_models' / 'tokenizer.pkl', 'rb') as f:
+#             tokenizer = pickle.load(f)
+#         with open(base_dir / 'saved_models' / 'label_encoder.pkl', 'rb') as f:
+#             label_encoder = pickle.load(f)
+        
+#         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
+#     except Exception as e:
+#         st.error(f"Error loading resources: {e}")
+#         return None, None, None, None, None
+
+
+def load_models_and_tokenizers():
+    try:
+        base_dir = Path(__file__).parent
+        
+        nb_path = base_dir / 'saved_models' / 'naive_bayes_model.pkl'
+        tfidf_path = base_dir / 'tfidf_vectorizer.pkl'
+        gru_path = base_dir / 'saved_models' / 'gru_model.h5'
+        tokenizer_path = base_dir / 'saved_models' / 'tokenizer.pkl'
+        label_enc_path = base_dir / 'saved_models' / 'label_encoder.pkl'
+        
+        st.write(f"Loading models from: {nb_path.parent}")
+        
+        with open(nb_path, 'rb') as f:
+            ml_model = pickle.load(f)
+        with open(tfidf_path, 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
         
-        # Periksa apakah vectorizer adalah TfidfVectorizer dan sudah dilatih
-        if not isinstance(tfidf_vectorizer, TfidfVectorizer):
-            raise ValueError(f"Diharapkan TfidfVectorizer, mendapat {type(tfidf_vectorizer).__name__}")
-        if not hasattr(tfidf_vectorizer, 'idf_') or tfidf_vectorizer.idf_ is None:
-            raise ValueError("TfidfVectorizer belum dilatih. Harap sediakan vectorizer yang sudah dilatih.")
-
-        # Muat model GRU
-        dl_model = load_model(os.path.join(base_path, 'gru_model.h5'))
+        # Check if TF-IDF vectorizer is fitted
+        check_is_fitted(tfidf_vectorizer)
         
-        # Muat tokenizer
-        with open(os.path.join(base_path, 'tokenizer.pkl'), 'rb') as f:
+        dl_model = load_model(gru_path)
+        with open(tokenizer_path, 'rb') as f:
             tokenizer = pickle.load(f)
-        
-        # Muat label encoder
-        with open(os.path.join(base_path, 'label_encoder.pkl'), 'rb') as f:
+        with open(label_enc_path, 'rb') as f:
             label_encoder = pickle.load(f)
         
-        print("Semua sumber daya dimuat berhasil")
+        st.write("All models loaded and TF-IDF vectorizer is fitted.")
         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
+    
     except Exception as e:
-        st.error(f"Error memuat sumber daya: {e}")
+        st.error(f"Error loading resources: {e}")
         return None, None, None, None, None
+
+
 # Section 3: Text Preprocessing
 def clean_text(text):
     """Clean and preprocess input text for sentiment analysis."""
@@ -78,19 +97,43 @@ def clean_text(text):
 
 # Section 4: Prediction Functions
 def predict_with_ml_model(text, model, vectorizer):
-    """Prediksi sentimen menggunakan model Naive Bayes."""
+    """Predict sentiment using the Naive Bayes model."""
     cleaned_text = clean_text(text)
-    if not cleaned_text:
-        st.error("Teks kosong setelah pembersihan.")
-        return None, None
-    try:
-        vectorized_text = vectorizer.transform([cleaned_text])
-        sentiment_result = model.predict(vectorized_text)[0]
-        probabilities = model.predict_proba(vectorized_text)[0]
-        return sentiment_result, probabilities
-    except Exception as e:
-        st.error(f"Error dalam prediksi ML: {e}")
-        return None, None
+    vectorized_text = vectorizer.transform([cleaned_text])
+    sentiment_result = model.predict(vectorized_text)[0]
+    
+    # Get probabilities for Naive Bayes
+    probabilities = model.predict_proba(vectorized_text)[0]
+    
+    return sentiment_result, probabilities
+
+# def predict_with_ml_model(text, model, vectorizer):
+#     """
+#     Predict sentiment using the Naive Bayes model and a fitted TF-IDF vectorizer.
+    
+#     Args:
+#         text (str): Input text to classify.
+#         model: Trained ML model with predict and predict_proba methods.
+#         vectorizer: Fitted TfidfVectorizer instance.
+        
+#     Returns:
+#         tuple: (predicted_label, probability_array)
+#     """
+#     cleaned_text = clean_text(text)
+#     st.write(f"Cleaned text: {cleaned_text}")  # Debugging
+#     st.write(f"Vectorizer fitted: {hasattr(vectorizer, 'vocabulary_') and vectorizer.vocabulary_ is not None}")  # Debugging
+    
+#     try:
+#         vectorized_text = vectorizer.transform([cleaned_text])
+#     except Exception as e:
+#         st.error(f"Vectorizer error: {str(e)}")
+#         raise ValueError("Vectorizer belum fit atau error saat transform: " + str(e))
+    
+#     sentiment_result = model.predict(vectorized_text)[0]
+#     probabilities = model.predict_proba(vectorized_text)[0]
+    
+#     return sentiment_result, probabilities
+
 
 def predict_with_dl_model(text, model, tokenizer, label_encoder, max_length=100):
     """Predict sentiment using the GRU model."""
