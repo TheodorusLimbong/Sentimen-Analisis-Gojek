@@ -159,14 +159,29 @@ def clean_text(text):
 # Section 4: Prediction Functions
 def predict_with_ml_model(text, model, vectorizer):
     """Predict sentiment using the Naive Bayes model."""
-    cleaned_text = clean_text(text)
-    vectorized_text = vectorizer.transform([cleaned_text])
-    sentiment_result = model.predict(vectorized_text)[0]
+    try:
+        cleaned_text = clean_text(text)
+        if not cleaned_text:
+            st.error("Input text is empty after cleaning.")
+            return None, None
+        
+        # Transform text using the vectorizer
+        vectorized_text = vectorizer.transform([cleaned_text])
+        
+        # Predict sentiment
+        sentiment_result = model.predict(vectorized_text)[0]
+        
+        # Get probabilities
+        probabilities = model.predict_proba(vectorized_text)[0]
+        
+        return sentiment_result, probabilities
     
-    # Get probabilities for Naive Bayes
-    probabilities = model.predict_proba(vectorized_text)[0]
-    
-    return sentiment_result, probabilities
+    except NotFittedError:
+        st.error("TF-IDF vectorizer is not fitted. Cannot transform text.")
+        return None, None
+    except Exception as e:
+        st.error(f"Error during prediction: {str(e)}")
+        return None, None
 
 # def predict_with_ml_model(text, model, vectorizer):
 #     """
