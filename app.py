@@ -43,7 +43,7 @@ def load_models_and_tokenizers():
             ml_model = pickle.load(f)
         
         # Load TF-IDF vectorizer
-        with open(os.path.join(model_dir, "tfidf_vectorizer.pkl"), 'rb') as f:
+        with open(os.path.join("tfidf_vectorizer.pkl"), 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
         
         # Debug: Check if vectorizer is fitted
