@@ -59,25 +59,19 @@ def load_models_and_tokenizers():
         with open(paths['naive_bayes'], 'rb') as f:
             ml_model = pickle.load(f)
         
-        # Load TF-IDF vectorizer
+        # Load and verify TF-IDF vectorizer
         with open(paths['tfidf_vectorizer'], 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
-        
-        # Verify if TF-IDF vectorizer is fitted
         try:
-            check_is_fitted(tfidf_vectorizer, attributes=['idf_'])
-            st.write("TF-IDF vectorizer loaded and fitted successfully.")
-        except NotFittedError:
-            st.error("TF-IDF vectorizer is not fitted. Please ensure the vectorizer was trained and saved properly.")
-            return None, None, None, None, None
+            check_is_fitted(tfidf_vectorizer)
+            st.write("TF-IDF vectorizer loaded and fitted.")
         except Exception as e:
-            st.error(f"Error validating TF-IDF vectorizer: {str(e)}")
+            st.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
             return None, None, None, None, None
         
         # Load GRU model
         try:
             dl_model = load_model(paths['gru_model'])
-            st.write("GRU model loaded successfully.")
         except Exception as e:
             st.error(f"Failed to load GRU model: {str(e)}")
             return None, None, None, None, None
@@ -165,29 +159,14 @@ def clean_text(text):
 # Section 4: Prediction Functions
 def predict_with_ml_model(text, model, vectorizer):
     """Predict sentiment using the Naive Bayes model."""
-    try:
-        cleaned_text = clean_text(text)
-        if not cleaned_text:
-            st.error("Input text is empty after cleaning.")
-            return None, None
-        
-        # Transform text using the vectorizer
-        vectorized_text = vectorizer.transform([cleaned_text])
-        
-        # Predict sentiment
-        sentiment_result = model.predict(vectorized_text)[0]
-        
-        # Get probabilities
-        probabilities = model.predict_proba(vectorized_text)[0]
-        
-        return sentiment_result, probabilities
+    cleaned_text = clean_text(text)
+    vectorized_text = vectorizer.transform([cleaned_text])
+    sentiment_result = model.predict(vectorized_text)[0]
     
-    except NotFittedError:
-        st.error("TF-IDF vectorizer is not fitted. Cannot transform text.")
-        return None, None
-    except Exception as e:
-        st.error(f"Error during prediction: {str(e)}")
-        return None, None
+    # Get probabilities for Naive Bayes
+    probabilities = model.predict_proba(vectorized_text)[0]
+    
+    return sentiment_result, probabilities
 
 # def predict_with_ml_model(text, model, vectorizer):
 #     """
