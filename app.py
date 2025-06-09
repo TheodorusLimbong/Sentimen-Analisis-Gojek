@@ -159,14 +159,37 @@ def clean_text(text):
 # Section 4: Prediction Functions
 def predict_with_ml_model(text, model, vectorizer):
     """Predict sentiment using the Naive Bayes model."""
-    cleaned_text = clean_text(text)
-    vectorized_text = vectorizer.transform([cleaned_text])
-    sentiment_result = model.predict(vectorized_text)[0]
-    
-    # Get probabilities for Naive Bayes
-    probabilities = model.predict_proba(vectorized_text)[0]
-    
-    return sentiment_result, probabilities
+    try:
+        # Verify vectorizer is fitted before using - check for specific attributes
+        check_is_fitted(vectorizer, attributes=['vocabulary_', 'idf_'])
+        
+        cleaned_text = clean_text(text)
+        
+        if not cleaned_text.strip():
+            st.warning("Input text is empty after cleaning. Please provide meaningful text.")
+            return None, None
+        
+        # Double-check that idf_ vector exists and is fitted
+        if not hasattr(vectorizer, 'idf_') or vectorizer.idf_ is None:
+            st.error("TF-IDF vectorizer's IDF vector is not fitted. Please retrain and save the vectorizer properly.")
+            return None, None
+        
+        # Transform text using fitted vectorizer
+        vectorized_text = vectorizer.transform([cleaned_text])
+        
+        # Make prediction
+        sentiment_result = model.predict(vectorized_text)[0]
+        probabilities = model.predict_proba(vectorized_text)[0]
+        
+        return sentiment_result, probabilities
+        
+    except NotFittedError as e:
+        st.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
+        st.error("The vectorizer needs to be fitted on training data before it can be used for predictions.")
+        return None, None
+    except Exception as e:
+        st.error(f"Error in ML prediction: {str(e)}")
+        return None, None
 
 # def predict_with_ml_model(text, model, vectorizer):
 #     """
