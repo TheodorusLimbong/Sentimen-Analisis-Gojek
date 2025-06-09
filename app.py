@@ -28,25 +28,48 @@ if 'prediction_history' not in st.session_state:
     st.session_state.prediction_history = []
 
 # Section 2: Resource Loading
-from pathlib import Path
-
-@st.cache_resource
+# Resolve the base directory dynamically
 BASE_DIR = Path(__file__).resolve().parent
+SAVED_MODELS_DIR = BASE_DIR / "saved_models"
 
-# Construct the path to the model file
-model_path = BASE_DIR / "saved_models" / "naive_bayes_model.pkl"
+# List of resources to load
+resources = {
+    "naive_bayes_model": SAVED_MODELS_DIR / "naive_bayes_model.pkl",
+    "tfidf_vectorizer": SAVED_MODELS_DIR / "tfidf_vectorizer.pkl",
+    "gru_model": SAVED_MODELS_DIR / "gru_model.h5",
+    "tokenizer": SAVED_MODELS_DIR / "tokenizer.pkl",
+    "label_encoder": SAVED_MODELS_DIR / "label_encoder.pkl",
+    "nb_metrics": SAVED_MODELS_DIR / "nb_metrics.pkl",
+    "gru_metrics": SAVED_MODELS_DIR / "gru_metrics.pkl",
+    "fasttext_model": SAVED_MODELS_DIR / "fasttext_model.model",
+    "gru_fasttext_model": SAVED_MODELS_DIR / "gru_fasttext_model.h5",
+    "gru_fasttext_metrics": SAVED_MODELS_DIR / "gru_fasttext_metrics.pkl",
+}
 
-# Check if the file exists
-if not model_path.exists():
-    print(f"File not found: {model_path}")
-else:
-    try:
-        # Load the model
-        with open(model_path, 'rb') as file:
-            naive_bayes_model = pickle.load(file)
-        print("Model successfully loaded.")
-    except Exception as e:
-        print(f"Error loading the model: {e}")
+# Dictionary to store loaded resources
+loaded_resources = {}
+
+# Load resources dynamically
+for name, path in resources.items():
+    if not path.exists():
+        print(f"❌ Resource not found: {path}")
+    else:
+        try:
+            if path.suffix in [".pkl", ".model"]:  # Load using pickle for .pkl and .model files
+                with open(path, 'rb') as file:
+                    loaded_resources[name] = pickle.load(file)
+            elif path.suffix == ".h5":  # Load TensorFlow models
+                import tensorflow as tf
+                loaded_resources[name] = tf.keras.models.load_model(path)
+            else:
+                print(f"⚠️ Unsupported file type for: {path}")
+        except Exception as e:
+            print(f"⚠️ Error loading {name} from {path}: {e}")
+        else:
+            print(f"✅ Successfully loaded: {name}")
+
+# Access loaded resources
+print("Loaded resources:", loaded_resources.keys())
 
 # Section 3: Text Preprocessing
 def clean_text(text):
