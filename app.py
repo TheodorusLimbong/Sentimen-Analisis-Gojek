@@ -5,7 +5,6 @@ import pickle
 import re
 import string
 import nltk
-import os
 from nltk.corpus import stopwords
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -32,37 +31,26 @@ if 'prediction_history' not in st.session_state:
 def load_models_and_tokenizers():
     """Load machine learning and deep learning models along with their vectorizers/tokenizers."""
     try:
-        model_dir = "saved_models"
-        # Debug: List files in directory
-        st.write(f"Current working directory: {os.getcwd()}")
-        st.write(f"Model directory: {os.path.abspath(model_dir)}")
-        st.write(f"Files in model directory: {os.listdir(model_dir)}")
-
         # Load ML model (Naive Bayes)
-        with open(os.path.join(model_dir, "naive_bayes_model.pkl"), 'rb') as f:
+        with open(r'C:\Users\theod\Downloads\UAS_PenalaranKomputer\notebook\saved_models\naive_bayes_model.pkl', 'rb') as f:
             ml_model = pickle.load(f)
         
         # Load TF-IDF vectorizer
-        with open(os.path.join(model_dir,"tfidf_vectorizer.pkl"), 'rb') as f:
+        with open(r'C:\Users\theod\Downloads\UAS_PenalaranKomputer\notebook\saved_models\tfidf_vectorizer.pkl', 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
         
-        # Debug: Check if vectorizer is fitted
-        if not hasattr(tfidf_vectorizer, 'idf_'):
-            st.error("TF-IDF vectorizer is not fitted!")
-            return None, None, None, None, None
-        
         # Load deep learning model (GRU) using h5
-        dl_model = load_model(os.path.join(model_dir, "gru_model.h5"))
+        dl_model = load_model(r'C:\Users\theod\Downloads\UAS_PenalaranKomputer\notebook\saved_models\gru_model.h5')
         
         # Load tokenizer
-        with open(os.path.join(model_dir, "tokenizer.pkl"), 'rb') as f:
+        with open(r'C:\Users\theod\Downloads\UAS_PenalaranKomputer\notebook\saved_models\tokenizer.pkl', 'rb') as f:
             tokenizer = pickle.load(f)
         
         # Load label encoder
-        with open(os.path.join(model_dir, "label_encoder.pkl"), 'rb') as f:
+        with open(r'C:\Users\theod\Downloads\UAS_PenalaranKomputer\notebook\saved_models\label_encoder.pkl', 'rb') as f:
             label_encoder = pickle.load(f)
         
-        st.write("All resources loaded successfully")
+        print("All resources loaded successfully")
         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
     except Exception as e:
         st.error(f"Error loading resources: {e}")
