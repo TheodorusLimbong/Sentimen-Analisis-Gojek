@@ -29,7 +29,7 @@ if 'prediction_history' not in st.session_state:
     st.session_state.prediction_history = []
 
 # Section 2: Resource Loading
-Resolve the base directory dynamically
+
 def load_models_and_tokenizers():
     try:
         base_dir = Path(__file__).parent  # directory where this script is located
