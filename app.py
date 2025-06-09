@@ -11,11 +11,6 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.feature_extraction.text import TfidfVectorizer
 from pathlib import Path
 from sklearn.utils.validation import check_is_fitted
-import logging
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Section 1: Imports and Setup
 nltk.download('stopwords', quiet=True)
@@ -34,16 +29,18 @@ if 'prediction_history' not in st.session_state:
     st.session_state.prediction_history = []
 
 # Section 2: Resource Loading
+
 def load_models_and_tokenizers():
     try:
         base_dir = Path(__file__).parent
         saved_models_dir = base_dir / 'saved_models'
         
+        # Check if directory exists
         if not saved_models_dir.exists():
             st.error(f"Model directory {saved_models_dir} does not exist.")
-            logger.error(f"Model directory {saved_models_dir} not found.")
             return None, None, None, None, None
-
+        
+        # Define model paths
         paths = {
             'naive_bayes': saved_models_dir / 'naive_bayes_model.pkl',
             'tfidf_vectorizer': saved_models_dir / 'tfidf_vectorizer.pkl',
@@ -51,70 +48,101 @@ def load_models_and_tokenizers():
             'tokenizer': saved_models_dir / 'tokenizer.pkl',
             'label_encoder': saved_models_dir / 'label_encoder.pkl'
         }
-
+        
+        # Check if all files exist
         for name, path in paths.items():
             if not path.exists():
                 st.error(f"File {name} not found at {path}.")
-                logger.error(f"File {name} not found at {path}.")
                 return None, None, None, None, None
-
-        # Load Naive Bayes
+        
+        # Load Naive Bayes model
         with open(paths['naive_bayes'], 'rb') as f:
             ml_model = pickle.load(f)
-        # Load TF-IDF Vectorizer
+        
+        # Load and verify TF-IDF vectorizer
         with open(paths['tfidf_vectorizer'], 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
-        # Verifikasi apakah sudah di-fit
         try:
-            check_is_fitted(tfidf_vectorizer, attributes=['vocabulary_', 'idf_'])
-            logger.info("TF-IDF vectorizer is fitted.")
+            check_is_fitted(tfidf_vectorizer)
+            st.write("TF-IDF vectorizer loaded and fitted.")
         except Exception as e:
-            st.error(
-                f"TF-IDF vectorizer is not fitted: {str(e)}\n"
-                "Please re-fit the vectorizer with your training data and re-save it.\n"
-                "See instructions in the logs or run the provided fitting script."
-            )
-            logger.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
+            st.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
             return None, None, None, None, None
-
-        # Load GRU Model
-        dl_model = load_model(paths['gru_model'])
-
-        # Load Tokenizer
+        
+        # Load GRU model
+        try:
+            dl_model = load_model(paths['gru_model'])
+        except Exception as e:
+            st.error(f"Failed to load GRU model: {str(e)}")
+            return None, None, None, None, None
+        
+        # Load tokenizer
         with open(paths['tokenizer'], 'rb') as f:
             tokenizer = pickle.load(f)
-
-        # Load Label Encoder
+        
+        # Load label encoder
         with open(paths['label_encoder'], 'rb') as f:
             label_encoder = pickle.load(f)
-
+        
         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
-
+    
     except Exception as e:
         st.error(f"Unexpected error loading resources: {str(e)}")
-        logger.error(f"Unexpected error loading resources: {str(e)}")
         return None, None, None, None, None
 
-# Placeholder function to fit TF-IDF vectorizer (to be used separately)
-def fit_and_save_tfidf_vectorizer(training_data, save_path='saved_models/tfidf_vectorizer.pkl'):
-    """
-    Fit a TF-IDF vectorizer with training data and save it.
-    Args:
-        training_data: List or array of text documents to fit the vectorizer.
-        save_path: Path to save the fitted vectorizer.
-    """
-    try:
-        vectorizer = TfidfVectorizer(max_features=5000)
-        vectorizer.fit(training_data)
-        save_path = Path(save_path)
-        save_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(save_path, 'wb') as f:
-            pickle.dump(vectorizer, f)
-        logger.info(f"TF-IDF vectorizer fitted and saved to {save_path}.")
-        return vectorizer
-    except Exception as e:
-        logger.error(f"Failed to fit and save TF-IDF vectorizer: {str(e)}")
-        raise
+# def load_models_and_tokenizers():
+#     try:
+#         base_dir = Path(__file__).parent  # directory where this script is located
+        
+#         with open(base_dir / 'saved_models' / 'naive_bayes_model.pkl', 'rb') as f:
+#             ml_model = pickle.load(f)
+#         with open(base_dir / 'saved_models' / 'tfidf_vectorizer.pkl', 'rb') as f:
+#             tfidf_vectorizer = pickle.load(f)
+#         dl_model = load_model(base_dir / 'saved_models' / 'gru_model.h5')
+#         with open(base_dir / 'saved_models' / 'tokenizer.pkl', 'rb') as f:
+#             tokenizer = pickle.load(f)
+#         with open(base_dir / 'saved_models' / 'label_encoder.pkl', 'rb') as f:
+#             label_encoder = pickle.load(f)
+        
+#         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
+#     except Exception as e:
+#         st.error(f"Error loading resources: {e}")
+#         return None, None, None, None, None
+
+
+# def load_models_and_tokenizers():
+#     try:
+#         base_dir = Path(__file__).parent
+        
+#         nb_path = base_dir / 'saved_models' / 'naive_bayes_model.pkl'
+#         tfidf_path = base_dir / 'saved_models' / 'tfidf_vectorizer.pkl'
+#         gru_path = base_dir / 'saved_models' / 'gru_model.h5'
+#         tokenizer_path = base_dir / 'saved_models' / 'tokenizer.pkl'
+#         label_enc_path = base_dir / 'saved_models' / 'label_encoder.pkl'
+        
+#         st.write(f"Loading models from: {nb_path.parent}")
+        
+#         with open(nb_path, 'rb') as f:
+#             ml_model = pickle.load(f)
+#         with open(tfidf_path, 'rb') as f:
+#             tfidf_vectorizer = pickle.load(f)
+        
+#         # Check if TF-IDF vectorizer is fitted
+#         check_is_fitted(tfidf_vectorizer)
+        
+#         dl_model = load_model(gru_path)
+#         with open(tokenizer_path, 'rb') as f:
+#             tokenizer = pickle.load(f)
+#         with open(label_enc_path, 'rb') as f:
+#             label_encoder = pickle.load(f)
+        
+#         st.write("All models loaded and TF-IDF vectorizer is fitted.")
+#         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
+    
+#     except Exception as e:
+#         st.error(f"Error loading resources: {e}")
+#         return None, None, None, None, None
+
 
 # Section 3: Text Preprocessing
 def clean_text(text):
@@ -131,36 +159,52 @@ def clean_text(text):
 # Section 4: Prediction Functions
 def predict_with_ml_model(text, model, vectorizer):
     """Predict sentiment using the Naive Bayes model."""
-    try:
-        cleaned_text = clean_text(text)
-        logger.info(f"Cleaned text: {cleaned_text}")
-        # Verify vectorizer is fitted before transforming
-        check_is_fitted(vectorizer, attributes=['vocabulary_', 'idf_'])
-        vectorized_text = vectorizer.transform([cleaned_text])
-        sentiment_result = model.predict(vectorized_text)[0]
-        probabilities = model.predict_proba(vectorized_text)[0]
-        logger.info(f"ML prediction successful: {sentiment_result}")
-        return sentiment_result, probabilities
-    except Exception as e:
-        st.error(f"Error in ML prediction: {str(e)}")
-        logger.error(f"Error in ML prediction: {str(e)}")
-        raise
+    cleaned_text = clean_text(text)
+    vectorized_text = vectorizer.transform([cleaned_text])
+    sentiment_result = model.predict(vectorized_text)[0]
+    
+    # Get probabilities for Naive Bayes
+    probabilities = model.predict_proba(vectorized_text)[0]
+    
+    return sentiment_result, probabilities
+
+# def predict_with_ml_model(text, model, vectorizer):
+#     """
+#     Predict sentiment using the Naive Bayes model and a fitted TF-IDF vectorizer.
+    
+#     Args:
+#         text (str): Input text to classify.
+#         model: Trained ML model with predict and predict_proba methods.
+#         vectorizer: Fitted TfidfVectorizer instance.
+        
+#     Returns:
+#         tuple: (predicted_label, probability_array)
+#     """
+#     cleaned_text = clean_text(text)
+#     st.write(f"Cleaned text: {cleaned_text}")  # Debugging
+#     st.write(f"Vectorizer fitted: {hasattr(vectorizer, 'vocabulary_') and vectorizer.vocabulary_ is not None}")  # Debugging
+    
+#     try:
+#         vectorized_text = vectorizer.transform([cleaned_text])
+#     except Exception as e:
+#         st.error(f"Vectorizer error: {str(e)}")
+#         raise ValueError("Vectorizer belum fit atau error saat transform: " + str(e))
+    
+#     sentiment_result = model.predict(vectorized_text)[0]
+#     probabilities = model.predict_proba(vectorized_text)[0]
+    
+#     return sentiment_result, probabilities
+
 
 def predict_with_dl_model(text, model, tokenizer, label_encoder, max_length=100):
     """Predict sentiment using the GRU model."""
-    try:
-        cleaned_text = clean_text(text)
-        sequence = tokenizer.texts_to_sequences([cleaned_text])
-        padded_sequence = pad_sequences(sequence, maxlen=max_length, padding='post')
-        probabilities = model.predict(padded_sequence, verbose=0)[0]
-        sentiment_idx = np.argmax(probabilities)
-        sentiment_result = label_encoder.inverse_transform([sentiment_idx])[0]
-        logger.info(f"DL prediction successful: {sentiment_result}")
-        return sentiment_result, probabilities
-    except Exception as e:
-        st.error(f"Error in DL prediction: {str(e)}")
-        logger.error(f"Error in DL prediction: {str(e)}")
-        raise
+    cleaned_text = clean_text(text)
+    sequence = tokenizer.texts_to_sequences([cleaned_text])
+    padded_sequence = pad_sequences(sequence, maxlen=max_length, padding='post')
+    probabilities = model.predict(padded_sequence, verbose=0)[0]
+    sentiment_idx = np.argmax(probabilities)
+    sentiment_result = label_encoder.inverse_transform([sentiment_idx])[0]
+    return sentiment_result, probabilities
 
 # Section 5: UI Components
 def display_prediction(sentiment, probabilities, model_type, classes):
@@ -206,11 +250,7 @@ def run_app():
     ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder = load_models_and_tokenizers()
     
     if not all([ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder]):
-        st.error(
-            "Failed to load resources. Please check model files.\n"
-            "If the TF-IDF vectorizer is not fitted, re-fit it with your training data using the provided instructions."
-        )
-        logger.error("Failed to load all required resources.")
+        st.error("Failed to load resources. Please check model files.")
         return
     
     # App header
@@ -241,22 +281,18 @@ def run_app():
     with tab2:
         if st.session_state.get('analyze_clicked', False):
             with st.spinner("Processing your review..."):
-                try:
-                    if model_choice == "Machine Learning (Naive Bayes)":
-                        sentiment_result, probabilities = predict_with_ml_model(
-                            st.session_state.user_review, ml_model, tfidf_vectorizer
-                        )
-                        classes = ml_model.classes_
-                    else:
-                        sentiment_result, probabilities = predict_with_dl_model(
-                            st.session_state.user_review, dl_model, tokenizer, label_encoder
-                        )
-                        classes = label_encoder.classes_
-                    
-                    display_prediction(sentiment_result, probabilities, model_choice, classes)
-                except Exception as e:
-                    st.error(f"Prediction failed: {str(e)}")
-                    logger.error(f"Prediction failed: {str(e)}")
+                if model_choice == "Machine Learning (Naive Bayes)":
+                    sentiment_result, probabilities = predict_with_ml_model(
+                        st.session_state.user_review, ml_model, tfidf_vectorizer
+                    )
+                    classes = ml_model.classes_
+                else:
+                    sentiment_result, probabilities = predict_with_dl_model(
+                        st.session_state.user_review, dl_model, tokenizer, label_encoder
+                    )
+                    classes = label_encoder.classes_
+                
+                display_prediction(sentiment_result, probabilities, model_choice, classes)
         
         display_history()
     
