@@ -9,6 +9,7 @@ from nltk.corpus import stopwords
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.feature_extraction.text import TfidfVectorizer
+from pathlib import Path
 
 # Section 1: Imports and Setup
 nltk.download('stopwords', quiet=True)
@@ -27,34 +28,56 @@ if 'prediction_history' not in st.session_state:
     st.session_state.prediction_history = []
 
 # Section 2: Resource Loading
+from pathlib import Path
+
 @st.cache_resource
 def load_models_and_tokenizers():
     """Load machine learning and deep learning models along with their vectorizers/tokenizers."""
     try:
-        # Load ML model (Naive Bayes)
-        with open(r'saved_models\naive_bayes_model.pkl', 'rb') as f:
+        # Define the base folder for models
+        base_path = Path("saved_model")
+
+        # Paths to model files
+        nb_model_path = base_path / "naive_bayes_model.pkl"
+        tfidf_vectorizer_path = base_path / "tfidf_vectorizer.pkl"
+        gru_model_path = base_path / "gru_model.h5"
+        tokenizer_path = base_path / "tokenizer.pkl"
+        label_encoder_path = base_path / "label_encoder.pkl"
+
+        # Check if all required files exist
+        required_files = [
+            nb_model_path,
+            tfidf_vectorizer_path,
+            gru_model_path,
+            tokenizer_path,
+            label_encoder_path,
+        ]
+        for file_path in required_files:
+            if not file_path.exists():
+                st.error(f"❌ Missing required file: {file_path.resolve()}")
+                st.stop()
+
+        # Load models and resources
+        with nb_model_path.open("rb") as f:
             ml_model = pickle.load(f)
-        
-        # Load TF-IDF vectorizer
-        with open(r'saved_models\tfidf_vectorizer.pkl', 'rb') as f:
+
+        with tfidf_vectorizer_path.open("rb") as f:
             tfidf_vectorizer = pickle.load(f)
-        
-        # Load deep learning model (GRU) using h5
-        dl_model = load_model(r'saved_models\gru_model.h5')
-        
-        # Load tokenizer
-        with open(r'saved_models\tokenizer.pkl', 'rb') as f:
+
+        dl_model = load_model(gru_model_path)
+
+        with tokenizer_path.open("rb") as f:
             tokenizer = pickle.load(f)
-        
-        # Load label encoder
-        with open(r'saved_models\label_encoder.pkl', 'rb') as f:
+
+        with label_encoder_path.open("rb") as f:
             label_encoder = pickle.load(f)
-        
+
         print("All resources loaded successfully")
         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
     except Exception as e:
         st.error(f"Error loading resources: {e}")
         return None, None, None, None, None
+
 
 # Section 3: Text Preprocessing
 def clean_text(text):
