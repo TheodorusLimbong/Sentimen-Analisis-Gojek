@@ -30,17 +30,25 @@ if 'prediction_history' not in st.session_state:
 
 # Section 2: Resource Loading
 
+from sklearn.utils.validation import check_is_fitted
+from pathlib import Path
+import pickle
+from tensorflow.keras.models import load_model
+import streamlit as st
+
+@st.cache_resource
 def load_models_and_tokenizers():
+    """Memuat model machine learning dan deep learning beserta vectorizer/tokenizer-nya."""
     try:
         base_dir = Path(__file__).parent
         saved_models_dir = base_dir / 'saved_models'
         
-        # Check if directory exists
+        # Periksa keberadaan direktori
         if not saved_models_dir.exists():
-            st.error(f"Model directory {saved_models_dir} does not exist.")
+            st.error(f"Direktori model {saved_models_dir} tidak ditemukan.")
             return None, None, None, None, None
         
-        # Define model paths
+        # Tentukan jalur model
         paths = {
             'naive_bayes': saved_models_dir / 'naive_bayes_model.pkl',
             'tfidf_vectorizer': saved_models_dir / 'tfidf_vectorizer.pkl',
@@ -49,45 +57,51 @@ def load_models_and_tokenizers():
             'label_encoder': saved_models_dir / 'label_encoder.pkl'
         }
         
-        # Check if all files exist
+        # Periksa keberadaan semua file
         for name, path in paths.items():
             if not path.exists():
-                st.error(f"File {name} not found at {path}.")
+                st.error(f"File {name} tidak ditemukan di {path}.")
                 return None, None, None, None, None
         
-        # Load Naive Bayes model
+        # Muat model Naive Bayes
         with open(paths['naive_bayes'], 'rb') as f:
             ml_model = pickle.load(f)
         
-        # Load and verify TF-IDF vectorizer
+        # Muat TF-IDF vectorizer
         with open(paths['tfidf_vectorizer'], 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
+        
+        # Verifikasi apakah TF-IDF vectorizer sudah di-fit
         try:
-            check_is_fitted(tfidf_vectorizer)
-            st.write("TF-IDF vectorizer loaded and fitted.")
+            check_is_fitted(tfidf_vectorizer, attributes=['idf_'])
+            st.write("Vectorizer TF-IDF berhasil dimuat dan sudah di-fit.")
+        except NotFittedError:
+            st.error("Vectorizer TF-IDF belum di-fit. Pastikan vectorizer telah dilatih dan disimpan dengan benar.")
+            return None, None, None, None, None
         except Exception as e:
-            st.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
+            st.error(f"Error saat memvalidasi vectorizer TF-IDF: {str(e)}")
             return None, None, None, None, None
         
-        # Load GRU model
+        # Muat model GRU
         try:
             dl_model = load_model(paths['gru_model'])
+            st.write("Model GRU berhasil dimuat.")
         except Exception as e:
-            st.error(f"Failed to load GRU model: {str(e)}")
+            st.error(f"Gagal memuat model GRU: {str(e)}")
             return None, None, None, None, None
         
-        # Load tokenizer
+        # Muat tokenizer
         with open(paths['tokenizer'], 'rb') as f:
             tokenizer = pickle.load(f)
         
-        # Load label encoder
+        # Muat label encoder
         with open(paths['label_encoder'], 'rb') as f:
             label_encoder = pickle.load(f)
         
         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
     
     except Exception as e:
-        st.error(f"Unexpected error loading resources: {str(e)}")
+        st.error(f"Error tak terduga saat memuat sumber daya: {str(e)}")
         return None, None, None, None, None
 
 # def load_models_and_tokenizers():
