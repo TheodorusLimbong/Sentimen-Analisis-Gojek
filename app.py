@@ -28,11 +28,12 @@ if 'prediction_history' not in st.session_state:
     st.session_state.prediction_history = []
 
 # Section 2: Resource Loading
+import os
+
 @st.cache_resource
 def load_models_and_tokenizers():
     """Load machine learning and deep learning models along with their vectorizers/tokenizers."""
     try:
-        # Define the directory for saved models
         model_dir = "saved_models"
         # Load ML model (Naive Bayes)
         with open(os.path.join(model_dir, "naive_bayes_model.pkl"), 'rb') as f:
