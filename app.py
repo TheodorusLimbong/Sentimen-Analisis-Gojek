@@ -59,19 +59,25 @@ def load_models_and_tokenizers():
         with open(paths['naive_bayes'], 'rb') as f:
             ml_model = pickle.load(f)
         
-        # Load and verify TF-IDF vectorizer
+        # Load TF-IDF vectorizer
         with open(paths['tfidf_vectorizer'], 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
+        
+        # Verify if TF-IDF vectorizer is fitted
         try:
-            check_is_fitted(tfidf_vectorizer)
-            st.write("TF-IDF vectorizer loaded and fitted.")
+            check_is_fitted(tfidf_vectorizer, attributes=['idf_'])
+            st.write("TF-IDF vectorizer loaded and fitted successfully.")
+        except NotFittedError:
+            st.error("TF-IDF vectorizer is not fitted. Please ensure the vectorizer was trained and saved properly.")
+            return None, None, None, None, None
         except Exception as e:
-            st.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
+            st.error(f"Error validating TF-IDF vectorizer: {str(e)}")
             return None, None, None, None, None
         
         # Load GRU model
         try:
             dl_model = load_model(paths['gru_model'])
+            st.write("GRU model loaded successfully.")
         except Exception as e:
             st.error(f"Failed to load GRU model: {str(e)}")
             return None, None, None, None, None
