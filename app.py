@@ -29,6 +29,19 @@ if 'prediction_history' not in st.session_state:
 # Section 2: Resource Loading
 import os
 
+import pickle
+import os
+
+# Path to the vectorizer file (adjust as needed)
+vectorizer_path = os.path.join('saved_models', 'tfidf_vectorizer.pkl')
+
+# Load the vectorizer
+with open(vectorizer_path, 'rb') as f:
+    tfidf_vectorizer = pickle.load(f)
+
+# Check if the vectorizer is fitted
+print("Vocabulary size:", len(tfidf_vectorizer.vocabulary_))
+print("IDF vector:", tfidf_vectorizer.idf_)
 # Section 2: Resource Loading
 @st.cache_resource
 def load_models_and_tokenizers():
