@@ -6,3 +6,4 @@ tensorflow==2.10.1
 scikit-learn==1.0.2
 protobuf==3.19.6
 altair==4.2.2
+pathlib
