@@ -79,13 +79,33 @@ def load_models_and_tokenizers():
             with open(paths['tfidf_vectorizer'], 'rb') as f:
                 tfidf_vectorizer = pickle.load(f)
             
-            # Check if vectorizer is fitted
+            # Check if vectorizer is fitted with specific attributes
             try:
-                check_is_fitted(tfidf_vectorizer)
-                st.success("✓ TF-IDF vectorizer loaded and fitted")
-            except NotFittedError:
-                st.error("❌ TF-IDF vectorizer is not fitted. Please ensure you saved a fitted vectorizer.")
-                st.info("The vectorizer needs to be fitted on training data before saving.")
+                check_is_fitted(tfidf_vectorizer, attributes=['vocabulary_', 'idf_'])
+                
+                # Additional validation for idf_ vector
+                if not hasattr(tfidf_vectorizer, 'idf_') or tfidf_vectorizer.idf_ is None:
+                    st.error("❌ TF-IDF vectorizer's IDF vector is None. Vectorizer was not properly fitted.")
+                    st.info("**To fix this:** Re-fit your vectorizer on training data before saving:")
+                    st.code("""
+# Example of proper fitting:
+vectorizer = TfidfVectorizer()
+X_train_tfidf = vectorizer.fit_transform(X_train_texts)  # This creates idf_
+pickle.dump(vectorizer, open('tfidf_vectorizer.pkl', 'wb'))
+                    """)
+                    return None, None, None, None, None
+                
+                st.success("✓ TF-IDF vectorizer loaded and properly fitted")
+                
+            except NotFittedError as e:
+                st.error(f"❌ TF-IDF vectorizer is not fitted: {str(e)}")
+                st.info("**To fix this:** Ensure the vectorizer is fitted before saving:")
+                st.code("""
+# Correct way to save fitted vectorizer:
+vectorizer = TfidfVectorizer()
+vectorizer.fit(training_texts)  # Must call fit() first
+pickle.dump(vectorizer, open('tfidf_vectorizer.pkl', 'wb'))
+                """)
                 return None, None, None, None, None
                 
         except Exception as e:
@@ -118,11 +138,19 @@ def load_models_and_tokenizers():
             st.error(f"Failed to load label encoder: {str(e)}")
             return None, None, None, None, None
         
-        # Verify vectorizer has required attributes
+        # Verify vectorizer has required attributes (more specific check)
         required_attrs = ['vocabulary_', 'idf_']
-        missing_attrs = [attr for attr in required_attrs if not hasattr(tfidf_vectorizer, attr)]
+        missing_attrs = []
+        
+        for attr in required_attrs:
+            if not hasattr(tfidf_vectorizer, attr):
+                missing_attrs.append(attr)
+            elif attr == 'idf_' and (getattr(tfidf_vectorizer, attr) is None):
+                missing_attrs.append(f"{attr} (is None)")
+        
         if missing_attrs:
-            st.error(f"TF-IDF vectorizer missing required attributes: {missing_attrs}")
+            st.error(f"TF-IDF vectorizer missing or invalid attributes: {missing_attrs}")
+            st.info("This indicates the vectorizer was not properly fitted before saving.")
             return None, None, None, None, None
         
         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
@@ -147,13 +175,18 @@ def clean_text(text):
 def predict_with_ml_model(text, model, vectorizer):
     """Predict sentiment using the Naive Bayes model."""
     try:
-        # Verify vectorizer is fitted before using
-        check_is_fitted(vectorizer)
+        # Verify vectorizer is fitted before using - check for specific attributes
+        check_is_fitted(vectorizer, attributes=['vocabulary_', 'idf_'])
         
         cleaned_text = clean_text(text)
         
         if not cleaned_text.strip():
             st.warning("Input text is empty after cleaning. Please provide meaningful text.")
+            return None, None
+        
+        # Double-check that idf_ vector exists and is fitted
+        if not hasattr(vectorizer, 'idf_') or vectorizer.idf_ is None:
+            st.error("TF-IDF vectorizer's IDF vector is not fitted. Please retrain and save the vectorizer properly.")
             return None, None
         
         # Transform text using fitted vectorizer
@@ -165,8 +198,9 @@ def predict_with_ml_model(text, model, vectorizer):
         
         return sentiment_result, probabilities
         
-    except NotFittedError:
-        st.error("TF-IDF vectorizer is not fitted. Cannot make predictions.")
+    except NotFittedError as e:
+        st.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
+        st.error("The vectorizer needs to be fitted on training data before it can be used for predictions.")
         return None, None
     except Exception as e:
         st.error(f"Error in ML prediction: {str(e)}")
@@ -256,25 +290,52 @@ def run_app():
     with st.spinner("Loading models..."):
         ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder = load_models_and_tokenizers()
     
-    if not all([ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder]):
-        st.error("❌ Failed to load required resources. Please check model files and try again.")
-        st.info("**Troubleshooting steps:**")
-        st.info("1. Ensure all model files exist in the 'saved_models' directory")
-        st.info("2. Check that the TF-IDF vectorizer was fitted before saving")
-        st.info("3. Verify all pickle files are not corrupted")
-        return
+    # Check what models are available
+    ml_available = all([ml_model, tfidf_vectorizer])
+    dl_available = all([dl_model, tokenizer, label_encoder])
+    
+    if not ml_available and not dl_available:
+        st.error("❌ No models could be loaded. Please check all model files.")
+        st.stop()
+    elif not ml_available:
+        st.warning("⚠️ Machine Learning model unavailable. Only Deep Learning model will be used.")
+    elif not dl_available:
+        st.warning("⚠️ Deep Learning model unavailable. Only Machine Learning model will be used.")
     
     # Sidebar for model selection
     st.sidebar.header("⚙️ Model Selection")
-    model_choice = st.sidebar.selectbox(
-        "Choose a model:",
-        ["Machine Learning (Naive Bayes)", "Deep Learning (GRU)"],
-        help="Select which model to use for sentiment analysis"
-    )
+    
+    # Only show available models
+    available_models = []
+    if ml_available:
+        available_models.append("Machine Learning (Naive Bayes)")
+    if dl_available:
+        available_models.append("Deep Learning (GRU)")
+    
+    if len(available_models) == 0:
+        st.sidebar.error("No models available")
+        model_choice = None
+    elif len(available_models) == 1:
+        model_choice = available_models[0]
+        st.sidebar.info(f"Using: {model_choice}")
+    else:
+        model_choice = st.sidebar.selectbox(
+            "Choose a model:",
+            available_models,
+            help="Select which model to use for sentiment analysis"
+        )
     
     # Display model status
     st.sidebar.markdown("### Model Status")
-    st.sidebar.success("✅ All models loaded successfully")
+    if ml_available:
+        st.sidebar.success("✅ ML Model: Ready")
+    else:
+        st.sidebar.error("❌ ML Model: Unavailable")
+    
+    if dl_available:
+        st.sidebar.success("✅ DL Model: Ready")
+    else:
+        st.sidebar.error("❌ DL Model: Unavailable")
     
     # Tabs for input, results, and model info
     tab1, tab2, tab3 = st.tabs(["📝 Input", "📊 Results", "ℹ️ Model Info"])
@@ -301,25 +362,29 @@ def run_app():
                 st.session_state.analyze_clicked = True
     
     with tab2:
-        if st.session_state.get('analyze_clicked', False):
+        if st.session_state.get('analyze_clicked', False) and model_choice:
             with st.spinner("🔄 Processing your review..."):
                 try:
-                    if model_choice == "Machine Learning (Naive Bayes)":
+                    if model_choice == "Machine Learning (Naive Bayes)" and ml_available:
                         sentiment_result, probabilities = predict_with_ml_model(
                             st.session_state.user_review, ml_model, tfidf_vectorizer
                         )
                         classes = ml_model.classes_ if sentiment_result is not None else None
-                    else:
+                    elif model_choice == "Deep Learning (GRU)" and dl_available:
                         sentiment_result, probabilities = predict_with_dl_model(
                             st.session_state.user_review, dl_model, tokenizer, label_encoder
                         )
                         classes = label_encoder.classes_ if sentiment_result is not None else None
+                    else:
+                        st.error("Selected model is not available.")
+                        sentiment_result, probabilities, classes = None, None, None
                     
                     if sentiment_result is not None and probabilities is not None:
                         display_prediction(sentiment_result, probabilities, model_choice, classes)
                     
                 except Exception as e:
                     st.error(f"An error occurred during prediction: {str(e)}")
+                    st.info("Try using the other model if available.")
         
         # Always show history if available
         display_history()
