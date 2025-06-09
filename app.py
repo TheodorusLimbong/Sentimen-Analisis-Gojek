@@ -32,22 +32,57 @@ if 'prediction_history' not in st.session_state:
 
 def load_models_and_tokenizers():
     try:
-        base_dir = Path(__file__).parent  # directory where this script is located
+        base_dir = Path(__file__).parent
         
+        # Load Naive Bayes model
         with open(base_dir / 'saved_models' / 'naive_bayes_model.pkl', 'rb') as f:
             ml_model = pickle.load(f)
+        
+        # Load TF-IDF vectorizer and check if fitted
         with open(base_dir / 'saved_models' / 'tfidf_vectorizer.pkl', 'rb') as f:
             tfidf_vectorizer = pickle.load(f)
+        try:
+            check_is_fitted(tfidf_vectorizer)
+            st.write("TF-IDF vectorizer loaded and fitted.")
+        except Exception as e:
+            st.error(f"TF-IDF vectorizer is not fitted: {str(e)}")
+            return None, None, None, None, None
+        
+        # Load GRU model
         dl_model = load_model(base_dir / 'saved_models' / 'gru_model.h5')
+        
+        # Load tokenizer
         with open(base_dir / 'saved_models' / 'tokenizer.pkl', 'rb') as f:
             tokenizer = pickle.load(f)
+        
+        # Load label encoder
         with open(base_dir / 'saved_models' / 'label_encoder.pkl', 'rb') as f:
             label_encoder = pickle.load(f)
         
         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
+    
     except Exception as e:
-        st.error(f"Error loading resources: {e}")
+        st.error(f"Error loading resources: {str(e)}")
         return None, None, None, None, None
+
+# def load_models_and_tokenizers():
+#     try:
+#         base_dir = Path(__file__).parent  # directory where this script is located
+        
+#         with open(base_dir / 'saved_models' / 'naive_bayes_model.pkl', 'rb') as f:
+#             ml_model = pickle.load(f)
+#         with open(base_dir / 'saved_models' / 'tfidf_vectorizer.pkl', 'rb') as f:
+#             tfidf_vectorizer = pickle.load(f)
+#         dl_model = load_model(base_dir / 'saved_models' / 'gru_model.h5')
+#         with open(base_dir / 'saved_models' / 'tokenizer.pkl', 'rb') as f:
+#             tokenizer = pickle.load(f)
+#         with open(base_dir / 'saved_models' / 'label_encoder.pkl', 'rb') as f:
+#             label_encoder = pickle.load(f)
+        
+#         return ml_model, tfidf_vectorizer, dl_model, tokenizer, label_encoder
+#     except Exception as e:
+#         st.error(f"Error loading resources: {e}")
+#         return None, None, None, None, None
 
 
 # def load_models_and_tokenizers():
